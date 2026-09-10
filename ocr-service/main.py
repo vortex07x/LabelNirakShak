@@ -9,7 +9,12 @@ from pytesseract import Output
 from preprocessing import preprocess_image
 from field_extraction import extract_fields, FIELD_DEFS
 
-pytesseract.pytesseract.tesseract_cmd = r'D:\tessaract\tesseract.exe'
+# Only override the binary path when explicitly told to (e.g. local Windows
+# dev where Tesseract isn't on PATH). On Linux/Docker, tesseract-ocr from
+# apt is already on PATH, so leave pytesseract's default lookup alone.
+_tesseract_cmd_override = os.environ.get('TESSERACT_CMD')
+if _tesseract_cmd_override:
+    pytesseract.pytesseract.tesseract_cmd = _tesseract_cmd_override
 
 app = FastAPI(title="PackCheck OCR Service")
 
