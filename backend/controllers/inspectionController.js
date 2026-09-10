@@ -7,6 +7,7 @@ import { getAllRules } from '../models/ruleModel.js'
 import { runRuleEngine } from '../services/ruleEngine.js'
 import { uploadPackageImage } from '../services/storageService.js'
 import { generateInspectionPDF } from '../services/pdfService.js'
+import { generateReportToken } from '../utils/reportToken.js'
 
 const OCR_SERVICE_URL = process.env.OCR_SERVICE_URL || 'http://localhost:8000'
 
@@ -23,6 +24,13 @@ async function runOCR(fileBuffer, originalname, mimetype) {
   })
 
   return data.extractedFields
+}
+
+// Ownership check shared by any route that returns a single inspection's
+// data to a possibly-non-owner requester.
+function canAccessInspection(inspection, user) {
+  if (!inspection || !user) return false
+  return inspection.inspector_id === user.id || user.role === 'admin'
 }
 
 export async function scanPackage(req, res, next) {
@@ -101,7 +109,32 @@ export async function getInspection(req, res, next) {
   try {
     const inspection = await getInspectionById(req.params.id)
     if (!inspection) return res.status(404).json({ message: 'Inspection not found' })
+
+    if (!canAccessInspection(inspection, req.user)) {
+      return res.status(403).json({ message: 'Forbidden' })
+    }
+
     res.status(200).json({ inspection })
+  } catch (err) {
+    next(err)
+  }
+}
+
+// Issues a short-lived (15 min), single-inspection report token. The
+// frontend calls this (with normal `protect` auth) to build the
+// downloadable/shareable report URL, e.g.:
+//   `${API_BASE}/inspections/${id}/report?token=${data.token}`
+export async function getReportLink(req, res, next) {
+  try {
+    const inspection = await getInspectionById(req.params.id)
+    if (!inspection) return res.status(404).json({ message: 'Inspection not found' })
+
+    if (!canAccessInspection(inspection, req.user)) {
+      return res.status(403).json({ message: 'Forbidden' })
+    }
+
+    const token = generateReportToken(inspection.id, req.user.id)
+    res.status(200).json({ token, expiresIn: '15m' })
   } catch (err) {
     next(err)
   }
@@ -112,6 +145,10 @@ export async function downloadReport(req, res, next) {
     const inspection = await getInspectionById(req.params.id)
     if (!inspection) {
       return res.status(404).json({ message: 'Inspection not found' })
+    }
+
+    if (!canAccessInspection(inspection, req.user)) {
+      return res.status(403).json({ message: 'Forbidden' })
     }
 
     const pdfBuffer = await generateInspectionPDF(inspection)

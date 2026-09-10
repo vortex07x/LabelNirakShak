@@ -24,12 +24,15 @@ export default function ScanDashboard() {
 
   const [meta, setMeta] = useState({ productName: '', brand: '', category: 'Food & Beverages', location: '' })
 
+  // Export button state — separate from the main scan status so a failed
+  // or in-flight export doesn't disturb the rest of the page.
+  const [exportState, setExportState] = useState('idle') // idle | loading | error
+
   useEffect(() => {
     if (!selectedFile) {
       setStatus('empty')
       return
     }
-    // Ask for product details before scanning, instead of scanning immediately
     setStatus('details')
   }, [selectedFile])
 
@@ -58,9 +61,23 @@ export default function ScanDashboard() {
     }
   }
 
-  const reportUrl = inspectionId
-    ? `${import.meta.env.VITE_API_BASE_URL}/inspections/${inspectionId}/report?token=${localStorage.getItem('packcheck_token')}`
-    : null
+  // Two-step export: mint a short-lived, single-inspection report token
+  // via the authenticated API call, then open the report using THAT token —
+  // never the raw session JWT — so a leaked/shared link can't be used to
+  // access the account.
+  async function handleExport() {
+    if (!inspectionId || exportState === 'loading') return
+    setExportState('loading')
+    try {
+      const { data } = await apiClient.get(`/inspections/${inspectionId}/report-link`)
+      const reportUrl = `${import.meta.env.VITE_API_BASE_URL}/inspections/${inspectionId}/report?token=${data.token}`
+      window.open(reportUrl, '_blank', 'noopener,noreferrer')
+      setExportState('idle')
+    } catch (err) {
+      console.error('Failed to get report link:', err.message)
+      setExportState('error')
+    }
+  }
 
   return (
     <div className="flex min-h-screen bg-[var(--color-bg)] text-[var(--color-text)]">
@@ -86,15 +103,18 @@ export default function ScanDashboard() {
             ) : null
           }
         >
-          {status === 'done' && reportUrl ? (
-            <a
-              href={reportUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1.5 rounded-lg border border-[var(--color-border-strong)] px-3.5 py-2 text-sm font-medium text-[var(--color-text-dim)] hover:bg-white/5"
+          {status === 'done' && inspectionId ? (
+            <button
+              onClick={handleExport}
+              disabled={exportState === 'loading'}
+              className="flex items-center gap-1.5 rounded-lg border border-[var(--color-border-strong)] px-3.5 py-2 text-sm font-medium text-[var(--color-text-dim)] hover:bg-white/5 disabled:opacity-60"
             >
-              Export PDF <ChevronDown size={14} />
-            </a>
+              {exportState === 'loading' ? (
+                <Loader2 size={14} className="animate-spin" />
+              ) : (
+                <>Export PDF <ChevronDown size={14} /></>
+              )}
+            </button>
           ) : (
             <button
               disabled
@@ -190,6 +210,12 @@ export default function ScanDashboard() {
                       <p className="text-sm font-semibold text-[var(--color-bad)]">Scan failed</p>
                       <p className="mt-1 text-[13px] text-[var(--color-text-dim)]">{error}</p>
                     </div>
+                  </div>
+                )}
+
+                {exportState === 'error' && (
+                  <div className="flex items-start gap-3 rounded-xl border border-[var(--color-bad)]/35 bg-[var(--color-bad)]/8 p-3 text-[13px] text-[var(--color-bad)]">
+                    <AlertCircle size={16} className="mt-0.5 shrink-0" /> Couldn't generate the report link. Please try again.
                   </div>
                 )}
 
