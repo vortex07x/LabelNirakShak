@@ -1,9 +1,9 @@
 // src/components/dashboard/Sidebar.jsx
 import {
   LayoutDashboard, ScanLine, History, FileBarChart2, Package,
-  BellRing, Settings, LogOut, ShieldCheck, ListChecks, X,
+  BellRing, Settings, LogOut, ShieldCheck, ListChecks, X, Home,
 } from 'lucide-react'
-import { Link, NavLink } from 'react-router-dom'
+import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext.jsx'
 
 const navItems = [
@@ -21,8 +21,14 @@ const adminNavItems = [
 ]
 
 export default function Sidebar({ mobileOpen = false, onClose = () => {} }) {
-  const { user } = useAuth()
+  const { user, logout } = useAuth()
+  const navigate = useNavigate()
   const items = user?.role === 'admin' ? [...navItems, ...adminNavItems] : navItems
+
+  function handleLogout() {
+    logout()
+    navigate('/login', { replace: true })
+  }
 
   return (
     <>
@@ -75,10 +81,29 @@ export default function Sidebar({ mobileOpen = false, onClose = () => {} }) {
           </nav>
         </div>
 
-        <Link to="/" className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-[var(--color-text-dim)] hover:bg-white/5 hover:text-[var(--color-text)] transition-colors">
-          <LogOut size={17} strokeWidth={2} />
-          Back to Home
-        </Link>
+        <div className="flex flex-col gap-1">
+          {user && (
+            <div className="px-3 py-1.5 text-xs text-[var(--color-text-faint)] truncate">
+              Signed in as <span className="text-[var(--color-text-dim)]">{user.email || user.name}</span>
+            </div>
+          )}
+
+          <Link
+            to="/"
+            className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-[var(--color-text-dim)] hover:bg-white/5 hover:text-[var(--color-text)] transition-colors"
+          >
+            <Home size={17} strokeWidth={2} />
+            Back to Home
+          </Link>
+
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-[var(--color-text-dim)] hover:bg-[var(--color-bad)]/10 hover:text-[var(--color-bad)] transition-colors"
+          >
+            <LogOut size={17} strokeWidth={2} />
+            Logout
+          </button>
+        </div>
       </aside>
     </>
   )
