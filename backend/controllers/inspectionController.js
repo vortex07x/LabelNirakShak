@@ -20,7 +20,11 @@ async function runOCR(fileBuffer, originalname, mimetype) {
       ...formData.getHeaders(),
       ...(process.env.OCR_SHARED_SECRET && { 'X-Internal-Secret': process.env.OCR_SHARED_SECRET }),
     },
-    timeout: 30000,
+    // 90s — observed free-tier OCR processing (denoise + threshold + Tesseract
+    // on a shared/throttled CPU, plus possible cold start) taking 55-65s+.
+    // The old 30s timeout was aborting valid requests that later succeeded
+    // server-side, producing false 502s on the frontend.
+    timeout: 90000,
   })
 
   return data.extractedFields
@@ -122,8 +126,7 @@ export async function getInspection(req, res, next) {
 
 // Issues a short-lived (15 min), single-inspection report token. The
 // frontend calls this (with normal `protect` auth) to build the
-// downloadable/shareable report URL, e.g.:
-//   `${API_BASE}/inspections/${id}/report?token=${data.token}`
+// downloadable/shareable report URL.
 export async function getReportLink(req, res, next) {
   try {
     const inspection = await getInspectionById(req.params.id)
