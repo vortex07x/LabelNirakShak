@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { ShieldCheck, ChevronDown, Menu, X } from 'lucide-react'
+import { useAuth } from '../../context/AuthContext.jsx'
 
 const links = ['Features', 'Industries']
 
@@ -26,9 +27,17 @@ function AnimatedNavText({ children }) {
 
 export default function Navbar() {
   const [open, setOpen] = useState(false)
+  const { user, logout } = useAuth()
+  const navigate = useNavigate()
 
   const handleLinkClick = () => {
     setOpen(false)
+  }
+
+  function handleLogout() {
+    logout()
+    setOpen(false)
+    navigate('/', { replace: true })
   }
 
   return (
@@ -66,15 +75,37 @@ export default function Navbar() {
         </nav>
 
         <div className="hidden lg:flex items-center gap-5">
-          <Link to="/login" className="nav-link-animated flex items-center gap-1 text-sm text-[var(--color-text-dim)] hover:text-[var(--color-text)] transition-colors">
-            <AnimatedNavText>Login</AnimatedNavText>
-          </Link>
-          <Link
-            to="/scan"
-            className="flex items-center gap-1.5 rounded-lg bg-[var(--color-accent)] px-4 py-2.5 text-sm font-semibold text-white shadow-[0_0_20px_-4px_rgba(59,130,246,0.6)] hover:bg-[var(--color-accent-light)] transition-colors"
-          >
-            Get Started →
-          </Link>
+          {user ? (
+            <>
+              <span className="text-sm text-[var(--color-text-faint)]">
+                {user.email || user.name}
+              </span>
+              <button
+                onClick={handleLogout}
+                className="nav-link-animated text-sm text-[var(--color-text-dim)] hover:text-[var(--color-text)] transition-colors"
+              >
+                <AnimatedNavText>Logout</AnimatedNavText>
+              </button>
+              <Link
+                to="/analytics"
+                className="flex items-center gap-1.5 rounded-lg bg-[var(--color-accent)] px-4 py-2.5 text-sm font-semibold text-white shadow-[0_0_20px_-4px_rgba(59,130,246,0.6)] hover:bg-[var(--color-accent-light)] transition-colors"
+              >
+                Dashboard →
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link to="/login" className="nav-link-animated flex items-center gap-1 text-sm text-[var(--color-text-dim)] hover:text-[var(--color-text)] transition-colors">
+                <AnimatedNavText>Login</AnimatedNavText>
+              </Link>
+              <Link
+                to="/scan"
+                className="flex items-center gap-1.5 rounded-lg bg-[var(--color-accent)] px-4 py-2.5 text-sm font-semibold text-white shadow-[0_0_20px_-4px_rgba(59,130,246,0.6)] hover:bg-[var(--color-accent-light)] transition-colors"
+              >
+                Get Started →
+              </Link>
+            </>
+          )}
         </div>
 
         <button className="lg:hidden text-[var(--color-text)]" onClick={() => setOpen((v) => !v)} aria-label="Toggle menu">
@@ -94,9 +125,25 @@ export default function Navbar() {
               <AnimatedNavText>{l}</AnimatedNavText>
             </a>
           ))}
-          <Link to="/scan" className="rounded-lg bg-[var(--color-accent)] px-4 py-2.5 text-center font-semibold text-white">
-            Get Started
-          </Link>
+          {user ? (
+            <>
+              <Link to="/analytics" onClick={handleLinkClick} className="rounded-lg bg-[var(--color-accent)] px-4 py-2.5 text-center font-semibold text-white">
+                Dashboard
+              </Link>
+              <button onClick={handleLogout} className="w-fit text-left">
+                Logout
+              </button>
+            </>
+          ) : (
+            <>
+              <Link to="/login" onClick={handleLinkClick} className="w-fit">
+                Login
+              </Link>
+              <Link to="/scan" onClick={handleLinkClick} className="rounded-lg bg-[var(--color-accent)] px-4 py-2.5 text-center font-semibold text-white">
+                Get Started
+              </Link>
+            </>
+          )}
         </div>
       )}
     </header>
