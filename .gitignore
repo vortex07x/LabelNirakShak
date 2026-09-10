@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Environment variables — never commit real secrets
+.env
+.env.local
+**/.env
+**/.env.local
+!.env.example
+!**/.env.example
+
+# Frontend build output
+dist/
+build/
+
+# Python (ocr-service)
+venv/
+__pycache__/
+**/__pycache__/
+*.pyc
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS/editor junk
+.DS_Store
+Thumbs.db
+.vscode/
