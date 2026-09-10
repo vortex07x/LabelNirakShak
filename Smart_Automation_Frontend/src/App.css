@@ -1,0 +1,151 @@
+.nav-action {
+  position: relative;
+  display: inline-flex;
+  height: 42px;
+  min-width: 112px;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 0.5rem;
+  background: var(--color-accent);
+  padding: 0 1rem;
+  color: white;
+  font-size: 0.875rem;
+  font-weight: 600;
+  box-shadow: 0 0 20px -4px rgba(59, 130, 246, 0.6);
+  transition: background-color 220ms ease;
+}
+
+.trusted-marquee {
+  overflow: hidden;
+  width: 100%;
+  mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+}
+
+.trusted-marquee-track {
+  display: flex;
+  width: max-content;
+  animation: trusted-marquee-scroll 24s linear infinite;
+}
+
+.trusted-marquee-item {
+  flex: 0 0 auto;
+  padding: 0 3rem;
+  white-space: nowrap;
+}
+
+@keyframes trusted-marquee-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trusted-marquee-track {
+    animation: none;
+  }
+}
+
+.nav-action:hover {
+  background: var(--color-accent-light);
+}
+
+.nav-action-label {
+  position: absolute;
+  display: flex;
+  overflow: hidden;
+  line-height: 1;
+}
+
+.nav-action-label span {
+  display: inline-block;
+  transition: transform 220ms ease;
+}
+
+.nav-action-label:not(.nav-action-label-hover) span {
+  transform: translateY(0);
+}
+
+.nav-action:hover .nav-action-label:not(.nav-action-label-hover) span {
+  transform: translateY(1.2em);
+}
+
+.nav-action-label-hover span {
+  transform: translateY(-1.2em);
+}
+
+.nav-action:hover .nav-action-label-hover span {
+  transform: translateY(0);
+}
+
+.nav-action-label span:nth-child(1) { transition: .2s;}
+.nav-action-label span:nth-child(2) { transition: .3s; }
+.nav-action-label span:nth-child(3) { transition: .4s; }
+.nav-action-label span:nth-child(4) { transition: .5s; }
+.nav-action-label span:nth-child(5) { transition: .6s; }
+.nav-action-label span:nth-child(6) { transition: .7s; }
+.nav-action-label span:nth-child(7) { transition: .8s; }
+.nav-action-label span:nth-child(8) { transition: .9s; }
+.nav-action-label span:nth-child(9) { transition: .95s; }
+.nav-action-label span:nth-child(10) { transition: .96s; }
+.nav-action-label span:nth-child(11) { transition: .97s; }
+
+.nav-link-animated {
+  position: relative;
+  display: inline-flex;
+  line-height: 1;
+}
+
+.nav-link-label {
+  display: flex;
+  overflow: hidden;
+}
+
+.nav-link-label span {
+  display: inline-block;
+  transition: transform 220ms ease-out;
+}
+
+.nav-link-label-hover {
+  position: absolute;
+  inset: 0;
+}
+
+.nav-link-label-current span {
+  transform: translateY(0);
+}
+
+.nav-link-label-hover span {
+  transform: translateY(-1.2em);
+}
+
+.nav-link-animated:hover .nav-link-label-current span {
+  transform: translateY(1.2em);
+}
+
+.nav-link-animated:hover .nav-link-label-hover span {
+  transform: translateY(0);
+}
+
+.nav-link-label span:nth-child(1) { transition: 0.2s; }
+.nav-link-label span:nth-child(2) { transition: 0.3s; }
+.nav-link-label span:nth-child(3) { transition: 0.4s; }
+.nav-link-label span:nth-child(4) { transition: 0.5s; }
+.nav-link-label span:nth-child(5) { transition: 0.6s; }
+.nav-link-label span:nth-child(6) { transition: 0.7s; }
+.nav-link-label span:nth-child(7) { transition: 0.8s; }
+.nav-link-label span:nth-child(8) { transition: 0.9s; }
+.nav-link-label span:nth-child(9) { transition: .95s; }
+.nav-link-label span:nth-child(10) { transition: .96s; }
+.nav-link-label span:nth-child(11) { transition: .97s; }
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
