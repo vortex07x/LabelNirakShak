@@ -30,6 +30,7 @@ def verify_secret(x_internal_secret: str = Header(default=None)):
 
 
 @app.get("/health")
+@app.head("/health")
 def health():
     return {"status": "ok"}
 
