@@ -20,11 +20,12 @@ async function runOCR(fileBuffer, originalname, mimetype) {
       ...formData.getHeaders(),
       ...(process.env.OCR_SHARED_SECRET && { 'X-Internal-Secret': process.env.OCR_SHARED_SECRET }),
     },
-    // 90s — observed free-tier OCR processing (denoise + threshold + Tesseract
-    // on a shared/throttled CPU, plus possible cold start) taking 55-65s+.
-    // The old 30s timeout was aborting valid requests that later succeeded
-    // server-side, producing false 502s on the frontend.
-    timeout: 90000,
+    // Render logs show real completion around ~120s on free-tier CPU
+    // (90s timeout was firing 25-30s BEFORE the OCR service actually
+    // finished, discarding valid results as false 502s). 180s gives
+    // real headroom while we profile and fix the actual slow stage —
+    // this is a stopgap, not the real fix.
+    timeout: 180000,
   })
 
   return data.extractedFields

@@ -1,6 +1,7 @@
 # ocr-service/main.py
 import io
 import os
+import time
 import pytesseract
 from PIL import Image
 from fastapi import FastAPI, UploadFile, File, HTTPException, Header, Depends
@@ -44,14 +45,23 @@ async def extract(image: UploadFile = File(...)):
     if len(raw) > MAX_FILE_SIZE:
         raise HTTPException(400, "File exceeds 8MB limit")
 
+    print(f"[TIMING] Received image: {len(raw) / 1024:.1f} KB")
+
     try:
         pil_image = Image.open(io.BytesIO(raw))
     except Exception:
         raise HTTPException(400, "Could not decode image file")
 
+    print(f"[TIMING] Original dimensions: {pil_image.size}")
+
+    t0 = time.perf_counter()
     processed = preprocess_image(pil_image)
+    t1 = time.perf_counter()
+    print(f"[TIMING] preprocess_image: {t1 - t0:.2f}s")
 
     data = pytesseract.image_to_data(processed, output_type=Output.DICT)
+    t2 = time.perf_counter()
+    print(f"[TIMING] pytesseract.image_to_data: {t2 - t1:.2f}s")
 
     lines_map = {}
     for i in range(len(data["text"])):
@@ -72,7 +82,9 @@ async def extract(image: UploadFile = File(...)):
         }
         for v in lines_map.values()
     ]
+    print(f"[TIMING] Line count after grouping: {len(lines)}")
 
+    t3 = time.perf_counter()
     if not lines:
         # Tesseract found no text at all — genuinely nothing to extract.
         extracted_fields = [
@@ -81,5 +93,9 @@ async def extract(image: UploadFile = File(...)):
         ]
     else:
         extracted_fields = extract_fields(lines)
+    t4 = time.perf_counter()
+    print(f"[TIMING] extract_fields (fuzzy regex): {t4 - t3:.2f}s")
+
+    print(f"[TIMING] TOTAL: {t4 - t0:.2f}s")
 
     return {"extractedFields": extracted_fields}
