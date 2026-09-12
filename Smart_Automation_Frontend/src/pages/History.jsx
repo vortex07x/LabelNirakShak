@@ -26,6 +26,8 @@ export default function History() {
   const [loadingMore, setLoadingMore] = useState(false)
 
   const [selected, setSelected] = useState(null)
+  const [downloadingId, setDownloadingId] = useState(null)
+  const [downloadError, setDownloadError] = useState('')
 
   async function fetchPage(newOffset = 0, append = false) {
     if (append) setLoadingMore(true)
@@ -53,8 +55,23 @@ export default function History() {
     fetchPage(0, false)
   }, [])
 
-  function reportUrlFor(id) {
-    return `${import.meta.env.VITE_API_BASE_URL}/inspections/${id}/report?token=${localStorage.getItem('packcheck_token')}`
+  // Two-step flow: mint a short-lived, single-inspection report token via
+  // the authenticated API call, THEN open the actual PDF URL with that
+  // token attached. The download link can no longer be a static <a href>
+  // built from the session token — report/report-link are separate,
+  // incompatible token types by design (see authMiddleware.js).
+  async function handleDownloadReport(id) {
+    setDownloadError('')
+    setDownloadingId(id)
+    try {
+      const { data } = await apiClient.get(`/inspections/${id}/report-link`)
+      const url = `${import.meta.env.VITE_API_BASE_URL}/inspections/${id}/report?token=${data.token}`
+      window.open(url, '_blank', 'noopener,noreferrer')
+    } catch (err) {
+      setDownloadError(err.response?.data?.message || 'Failed to generate report link.')
+    } finally {
+      setDownloadingId(null)
+    }
   }
 
   return (
@@ -65,6 +82,12 @@ export default function History() {
         <DashboardHeader title="Inspection History" onMenuClick={() => setMobileOpen(true)} />
 
         <div className="flex flex-col gap-5 p-6 md:p-8">
+          {downloadError && (
+            <div className="flex items-center gap-2 rounded-lg border border-[var(--color-bad)]/35 bg-[var(--color-bad)]/8 px-3 py-2 text-xs text-[var(--color-bad)]">
+              <AlertCircle size={14} /> {downloadError}
+            </div>
+          )}
+
           {status === 'loading' && (
             <div className="flex items-center justify-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-12 text-sm text-[var(--color-text-dim)]">
               <Loader2 size={18} className="animate-spin" /> Loading history…
@@ -147,16 +170,18 @@ export default function History() {
                               {insp.compliance_score !== null ? `${insp.compliance_score}%` : '—'}
                             </td>
                             <td className="px-4 py-3">
-                              <a
-                                href={reportUrlFor(insp.id)}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                onClick={(e) => e.stopPropagation()}
-                                className="flex items-center gap-1 rounded-lg p-1.5 text-[var(--color-text-dim)] hover:bg-white/5"
+                              <button
+                                onClick={(e) => { e.stopPropagation(); handleDownloadReport(insp.id) }}
+                                disabled={downloadingId === insp.id}
+                                className="flex items-center gap-1 rounded-lg p-1.5 text-[var(--color-text-dim)] hover:bg-white/5 disabled:opacity-50"
                                 aria-label="Download PDF report"
                               >
-                                <Download size={15} />
-                              </a>
+                                {downloadingId === insp.id ? (
+                                  <Loader2 size={15} className="animate-spin" />
+                                ) : (
+                                  <Download size={15} />
+                                )}
+                              </button>
                             </td>
                           </tr>
                         )
@@ -206,14 +231,18 @@ export default function History() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <a
-                  href={reportUrlFor(selected.id)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 rounded-lg border border-[var(--color-border-strong)] px-3 py-1.5 text-xs font-medium text-[var(--color-text-dim)] hover:bg-white/5"
+                <button
+                  onClick={() => handleDownloadReport(selected.id)}
+                  disabled={downloadingId === selected.id}
+                  className="flex items-center gap-1.5 rounded-lg border border-[var(--color-border-strong)] px-3 py-1.5 text-xs font-medium text-[var(--color-text-dim)] hover:bg-white/5 disabled:opacity-50"
                 >
-                  <Download size={13} /> PDF
-                </a>
+                  {downloadingId === selected.id ? (
+                    <Loader2 size={13} className="animate-spin" />
+                  ) : (
+                    <Download size={13} />
+                  )}
+                  PDF
+                </button>
                 <button onClick={() => setSelected(null)} className="text-[var(--color-text-dim)] hover:text-[var(--color-text)]">
                   <X size={18} />
                 </button>
