@@ -28,3 +28,5 @@ npm-debug.log*
 .DS_Store
 Thumbs.db
 .vscode/
+smoke_test.py
+test_images/
